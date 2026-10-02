@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoTech Pro - Refacciones Automotrices</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#121316] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-[#ff5500] selection:text-white">
+
+  <!-- TOP BAR DE INFORMACIÓN -->
+  <div class="bg-[#d9381e] text-white text-[11px] font-bold py-1.5 px-4 text-center tracking-wide uppercase flex items-center justify-center gap-2 shadow-sm">
+    <i class="fa-solid fa-truck-fast"></i>
+    <span>Envíos rápidos a todo México y garantía directa de mostrador</span>
+  </div>
+
+  <!-- NAVBAR PRINCIPAL -->
+  <nav class="bg-[#1c1e24] border-b border-neutral-800 sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-[#ff5500] text-white p-2.5 rounded-xl font-black text-xl flex items-center justify-center shadow-md shadow-[#ff5500]/30">
+          <i class="fa-solid fa-gears"></i>
+        </div>
+        <div>
+          <span class="text-2xl font-black text-white tracking-wider">AUTO<span class="text-[#ff5500]">TECH</span></span>
+        </div>
+      </div>
+      
+      <!-- CONTROLES DE SESIÓN -->
+      <div id="auth-controls" class="flex items-center gap-2 text-sm font-medium">
+        <button id="auth-btn" onclick="toggleAuthModal()" class="bg-[#ff5500] hover:bg-[#e04b00] text-white font-bold px-4 py-2 rounded-xl shadow-md shadow-[#ff5500]/20 transition transform active:scale-95 flex items-center gap-2">
+          <i class="fa-solid fa-user-shield"></i> Acceso Empleado
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BANNER CON FILTRADOR -->
+  <header class="relative py-10 px-4 border-b border-neutral-800 bg-gradient-to-b from-[#1c1e24] via-[#16171c] to-[#121316]">
+    <div class="max-w-5xl mx-auto text-center">
+      <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight">
+        Catálogo Especializado de Autopartes
+      </h1>
+
+      <!-- PANEL DE FILTRADO -->
+      <div class="mt-8 bg-[#1a1c22] border-2 border-neutral-800 p-4 rounded-2xl shadow-2xl space-y-4">
+        
+        <!-- Búsqueda por texto -->
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-neutral-400"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            oninput="ejecutarFiltros()"
+            placeholder="Buscar por refacción (balata, bujía, bomba), no. parte o vehículo..." 
+            class="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f1013] border border-neutral-700 text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff5500] focus:ring-1 focus:ring-[#ff5500] text-sm font-medium"
+          >
+        </div>
+
+        <!-- Selectores desplegables -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <!-- Filtro por Auto -->
+          <div class="flex items-center gap-2 bg-[#0f1013] px-3.5 py-2.5 rounded-xl border border-neutral-700">
+            <i class="fa-solid fa-car text-[#ff5500]"></i>
+            <label class="text-neutral-400 font-bold uppercase text-[10px]">Vehículo:</label>
+            <select id="filtro-auto" onchange="ejecutarFiltros()" class="bg-transparent text-white focus:outline-none flex-1 font-semibold cursor-pointer">
+              <option value="todos" class="bg-[#1a1c22] text-white">Todos los Modelos</option>
+              <option value="Nissan" class="bg-[#1a1c22] text-white">Nissan Versa</option>
+              <option value="Chevrolet" class="bg-[#1a1c22] text-white">Chevrolet Aveo</option>
+              <option value="Volkswagen" class="bg-[#1a1c22] text-white">Volkswagen Jetta</option>
+              <option value="Ford" class="bg-[#1a1c22] text-white">Ford Focus</option>
+              <option value="Toyota" class="bg-[#1a1c22] text-white">Toyota Corolla</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Rango de Precio -->
+          <div class="flex items-center gap-2 bg-[#0f1013] px-3.5 py-2.5 rounded-xl border border-neutral-700">
+            <i class="fa-solid fa-tags text-[#ff5500]"></i>
+            <label class="text-neutral-400 font-bold uppercase text-[10px]">Precio:</label>
+            <select id="filtro-precio" onchange="ejecutarFiltros()" class="bg-transparent text-white focus:outline-none flex-1 font-semibold cursor-pointer">
+              <option value="todos" class="bg-[#1a1c22] text-white">Cualquier precio</option>
+              <option value="economico" class="bg-[#1a1c22] text-white">Económicas (Menos de $800 MXN)</option>
+              <option value="medio" class="bg-[#1a1c22] text-white">Gama Media ($800 - $1,500 MXN)</option>
+              <option value="premium" class="bg-[#1a1c22] text-white">Gama Alta (Más de $1,500 MXN)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- BOTONES DE CATEGORÍAS -->
+        <div class="pt-2 border-t border-neutral-800 flex flex-wrap justify-center gap-2 text-xs font-bold">
+          <button onclick="seleccionarCategoria('todas')" class="cat-btn px-4 py-2 rounded-xl bg-[#ff5500] text-white transition shadow-sm" data-cat="todas">
+            Todas
+          </button>
+          <button onclick="seleccionarCategoria(1)" class="cat-btn px-4 py-2 rounded-xl bg-[#23262f] text-neutral-300 hover:bg-[#2c303b] transition" data-cat="1">
+            <i class="fa-solid fa-compact-disc text-[#ff5500]"></i> Frenos
+          </button>
+          <button onclick="seleccionarCategoria(2)" class="cat-btn px-4 py-2 rounded-xl bg-[#23262f] text-neutral-300 hover:bg-[#2c303b] transition" data-cat="2">
+            <i class="fa-solid fa-arrows-up-down text-[#ff5500]"></i> Suspensión
+          </button>
+          <button onclick="seleccionarCategoria(3)" class="cat-btn px-4 py-2 rounded-xl bg-[#23262f] text-neutral-300 hover:bg-[#2c303b] transition" data-cat="3">
+            <i class="fa-solid fa-fire text-[#ff5500]"></i> Motor
+          </button>
+          <button onclick="seleccionarCategoria(4)" class="cat-btn px-4 py-2 rounded-xl bg-[#23262f] text-neutral-300 hover:bg-[#2c303b] transition" data-cat="4">
+            <i class="fa-solid fa-bolt text-[#ff5500]"></i> Eléctrico
+          </button>
+          <button onclick="seleccionarCategoria(5)" class="cat-btn px-4 py-2 rounded-xl bg-[#23262f] text-neutral-300 hover:bg-[#2c303b] transition" data-cat="5">
+            <i class="fa-solid fa-gas-pump text-[#ff5500]"></i> Combustible
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- BARRA DE ADMINISTRACIÓN (SOLO VISIBLE CON LOGIN ACTIVO) -->
+  <section id="admin-panel" class="hidden bg-neutral-900 border-b border-amber-500/40 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+        <span class="text-xs font-bold text-neutral-200">Panel de Control: <span id="admin-user-display" class="text-amber-400 font-mono"></span></span>
+      </div>
+      <button onclick="toggleNuevoModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Dar de Alta Nueva Refacción
+      </button>
+    </div>
+  </section>
+
+  <!-- CATÁLOGO PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full" id="catalogo">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <span class="w-2.5 h-6 bg-[#ff5500] rounded-full inline-block"></span>
+        Inventario de Refacciones
+      </h2>
+      <span id="contador-productos" class="text-xs font-bold text-neutral-300 bg-[#1c1e24] px-3.5 py-1.5 rounded-full border border-neutral-700 shadow-inner">Cargando piezas...</span>
+    </div>
+
+    <div id="loader" class="text-center py-20 text-neutral-400 flex flex-col items-center gap-3">
+      <div class="w-8 h-8 border-4 border-[#ff5500] border-t-transparent rounded-full animate-spin"></div>
+      <span>Cargando refacciones...</span>
+    </div>
+    
+    <div id="grid-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+  </main>
+
+  <!-- MODAL DE LOGIN (ACCESO EMPLEADO) -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-[#1c1e24] border-2 border-neutral-800 p-6 rounded-2xl w-full max-w-sm relative shadow-2xl">
+      <button onclick="toggleAuthModal()" class="absolute top-4 right-4 text-neutral-400 hover:text-white">✕</button>
+      <div class="flex items-center gap-2 mb-4">
+        <i class="fa-solid fa-lock text-[#ff5500] text-lg"></i>
+        <h2 class="text-lg font-bold text-white">Acceso de Empleado</h2>
+      </div>
+      <input type="email" id="login-email" placeholder="admin@autotech.com" class="w-full mb-3 px-3.5 py-2.5 bg-[#0f1013] border border-neutral-700 rounded-lg text-sm focus:outline-none focus:border-[#ff5500] text-white">
+      <input type="password" id="login-pass" placeholder="Contraseña" class="w-full mb-4 px-3.5 py-2.5 bg-[#0f1013] border border-neutral-700 rounded-lg text-sm focus:outline-none focus:border-[#ff5500] text-white">
+      <button id="login-btn-submit" onclick="login()" class="w-full bg-[#ff5500] hover:bg-[#e04b00] text-white font-bold py-2.5 rounded-lg text-sm transition shadow-md shadow-[#ff5500]/20">Entrar al Almacén</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE ALTA DE NUEVA REFACCIÓN (ADMIN) -->
+  <div id="nuevo-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50 overflow-y-auto">
+    <div class="bg-[#1c1e24] border-2 border-neutral-800 p-6 rounded-2xl w-full max-w-lg relative shadow-2xl my-8">
+      <button onclick="toggleNuevoModal()" class="absolute top-4 right-4 text-neutral-400 hover:text-white">✕</button>
+      <div class="flex items-center gap-2 mb-5">
+        <i class="fa-solid fa-plus-circle text-[#ff5500] text-xl"></i>
+        <h2 class="text-lg font-bold text-white">Registrar Nueva Refacción</h2>
+      </div>
+      
+      <form onsubmit="guardarNuevaRefaccion(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-neutral-400 font-bold mb-1">Nombre de la Refacción</label>
+          <input type="text" id="nuevo-nombre" required placeholder="Ej: Kit de Balatas Delanteras" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-neutral-400 font-bold mb-1">Número de Parte</label>
+            <input type="text" id="nuevo-parte" required placeholder="Ej: BRK-NIS-99" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white font-mono focus:outline-none focus:border-[#ff5500]">
+          </div>
+          <div>
+            <label class="block text-neutral-400 font-bold mb-1">Categoría</label>
+            <select id="nuevo-cat" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+              <option value="1">1 - Frenos</option>
+              <option value="2">2 - Suspensión</option>
+              <option value="3">3 - Motor</option>
+              <option value="4">4 - Eléctrico</option>
+              <option value="5">5 - Combustible</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-neutral-400 font-bold mb-1">Auto Compatible</label>
+            <input type="text" id="nuevo-auto" required placeholder="Ej: Nissan Versa" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+          </div>
+          <div>
+            <label class="block text-neutral-400 font-bold mb-1">Año Modelo</label>
+            <input type="number" id="nuevo-ano" required min="1990" max="2027" value="2022" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-neutral-400 font-bold mb-1">Precio ($ MXN)</label>
+            <input type="number" id="nuevo-precio" step="0.50" required placeholder="850.00" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+          </div>
+          <div>
+            <label class="block text-neutral-400 font-bold mb-1">Stock Inicial</label>
+            <input type="number" id="nuevo-stock" required min="0" value="10" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-neutral-400 font-bold mb-1">URL de la Imagen</label>
+          <input type="url" id="nuevo-imagen" placeholder="https://..." value="https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600" class="w-full px-3 py-2 bg-[#0f1013] border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-[#ff5500]">
+        </div>
+
+        <button type="submit" id="btn-guardar-pieza" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 rounded-lg text-sm transition shadow">
+          Guardar en Supabase
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- BOTÓN FLOTANTE Y VENTANA DE CHAT -->
+  <div class="fixed bottom-6 right-6 z-40">
+    <button onclick="toggleChat()" class="bg-[#ff5500] hover:bg-[#e04b00] text-white p-4 rounded-full shadow-2xl shadow-[#ff5500]/40 font-black flex items-center gap-2.5 transform hover:scale-105 transition">
+      <i class="fa-solid fa-comments text-xl"></i>
+      <span class="hidden sm:inline text-sm">Chat</span>
+    </button>
+    
+    <div id="chat-modal" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 bg-[#1a1c22] border-2 border-neutral-800 rounded-2xl shadow-2xl flex flex-col h-[430px] overflow-hidden">
+      <div class="bg-[#23262f] px-4 py-3 flex justify-between items-center border-b border-neutral-700">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></span>
+          <span class="text-sm font-black text-white">Chat</span>
+        </div>
+        <button onclick="toggleChat()" class="text-neutral-400 hover:text-white">✕</button>
+      </div>
+
+      <div id="chat-mensajes" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs bg-[#121316]"></div>
+
+      <div class="p-2.5 border-t border-neutral-800 flex gap-2 bg-[#1a1c22]">
+        <input type="text" id="chat-input" placeholder="Pregunta por precio de amortiguador, balata, auto..." class="flex-1 bg-[#0f1013] px-3 py-2 rounded-lg text-xs border border-neutral-700 focus:outline-none focus:border-[#ff5500] text-white" onkeydown="if(event.key==='Enter') enviarMensaje()">
+        <button id="chat-send-btn" onclick="enviarMensaje()" class="bg-[#ff5500] hover:bg-[#e04b00] text-white px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT CON POO, AUTENTICACIÓN Y ALTA DE PRODUCTOS -->
+  <script>
+    const SUPABASE_URL = 'https://uiizllxjrsstefjesmny.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_oIe3Eog3s0J3EV_l9KYEWQ_H8CDEpMd';
+    const GEMINI_API_KEY = 'AQ.Ab8RN6KVhZETETatrLoPPqLHVn468YrnGQpp3AldZHXN_fb24A';
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ==========================================
+    // CLASE POO: REFACCIÓN
+    // ==========================================
+    class Refaccion {
+      constructor(data) {
+        this.id = data.id;
+        this.nombre = data.nombre;
+        this.numeroParte = data.numero_parte;
+        this.precio = Number(data.precio);
+        this.stock = Number(data.stock);
+        this.categoriaId = Number(data.categoria_id);
+        this.marcaVehiculo = data.marca_vehiculo;
+        this.modeloAno = data.modelo_ano;
+        this.imagenUrl = data.imagen_url || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600';
+      }
+
+      getPrecioFormateado() {
+        return `$${this.precio.toFixed(2)} MXN`;
+      }
+
+      getEstadoStock() {
+        if (this.stock === 0) return { texto: 'Agotado', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' };
+        if (this.stock <= 8) return { texto: `¡Pocas piezas! (${this.stock})`, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
+        return { texto: `En Stock (${this.stock} pzas)`, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+      }
+
+      generarHTML() {
+        const estado = this.getEstadoStock();
+        return `
+          <div class="bg-[#1a1c22] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col hover:border-[#ff5500]/60 hover:shadow-2xl hover:shadow-[#ff5500]/10 transition duration-200 group">
+            <div class="relative h-48 w-full bg-[#0f1013] overflow-hidden">
+              <img src="${this.imagenUrl}" alt="${this.nombre}" class="h-full w-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600'">
+              <span class="absolute top-3 right-3 text-[11px] font-bold bg-[#0f1013]/90 text-[#ff5500] font-mono px-2.5 py-1 rounded-lg border border-neutral-700 shadow">
+                ${this.numeroParte}
+              </span>
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-base text-white group-hover:text-[#ff5500] transition leading-snug">${this.nombre}</h3>
+                <div class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#23262f] border border-neutral-700 text-neutral-300 text-xs font-semibold">
+                  <i class="fa-solid fa-car-side text-[#ff5500]"></i>
+                  <span>${this.marcaVehiculo} (${this.modeloAno})</span>
+                </div>
+              </div>
+
+              <div class="mt-5 pt-3 border-t border-neutral-800 flex justify-between items-end">
+                <div>
+                  <span class="text-[10px] text-neutral-400 block uppercase font-bold tracking-wider">Precio</span>
+                  <span class="text-xl font-black text-[#ff5500]">${this.getPrecioFormateado()}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold px-2.5 py-1 rounded-md border ${estado.color}">${estado.texto}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    let refaccionesInstanciadas = [];
+    let categoriaSeleccionada = 'todas';
+
+    async function cargarProductos() {
+      const loader = document.getElementById('loader');
+      const grid = document.getElementById('grid-productos');
+      
+      const { data, error } = await supabaseClient.from('productos').select('*').order('id', { ascending: true });
+      
+      if (error) {
+        loader.innerText = 'Error al conectar con la base de datos: ' + error.message;
+        return;
+      }
+
+      refaccionesInstanciadas = (data || []).map(item => new Refaccion(item));
+      renderCatalogo(refaccionesInstanciadas);
+      loader.classList.add('hidden');
+      grid.classList.remove('hidden');
+    }
+
+    function renderCatalogo(lista) {
+      const grid = document.getElementById('grid-productos');
+      const contador = document.getElementById('contador-productos');
+      contador.innerText = `${lista.length} refacciones encontradas`;
+
+      if (lista.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-16 text-neutral-500 font-medium">No hay refacciones compatibles con los filtros aplicados.</div>`;
+        return;
+      }
+
+      grid.innerHTML = lista.map(ref => ref.generarHTML()).join('');
+    }
+
+    function seleccionarCategoria(catId) {
+      categoriaSeleccionada = catId;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        const target = btn.getAttribute('data-cat');
+        if (target === String(catId)) {
+          btn.className = 'cat-btn px-4 py-2 rounded-xl bg-[#ff5500] text-white transition shadow-sm font-bold';
+        } else {
+          btn.className = 'cat-btn px-4 py-2 rounded-xl bg-[#23262f] text-neutral-300 hover:bg-[#2c303b] transition font-bold';
+        }
+      });
+      ejecutarFiltros();
+    }
+
+    function ejecutarFiltros() {
+      const texto = document.getElementById('search-input').value.toLowerCase().trim();
+      const auto = document.getElementById('filtro-auto').value;
+      const precio = document.getElementById('filtro-precio').value;
+
+      const resultados = refaccionesInstanciadas.filter(ref => {
+        const coincideCat = (categoriaSeleccionada === 'todas') || (ref.categoriaId === Number(categoriaSeleccionada));
+        const coincideAuto = (auto === 'todos') || (ref.marcaVehiculo.includes(auto));
+
+        let coincidePrecio = true;
+        if (precio === 'economico') coincidePrecio = ref.precio < 800;
+        else if (precio === 'medio') coincidePrecio = ref.precio >= 800 && ref.precio <= 1500;
+        else if (precio === 'premium') coincidePrecio = ref.precio > 1500;
+
+        const coincideTexto = !texto || 
+          ref.nombre.toLowerCase().includes(texto) ||
+          ref.numeroParte.toLowerCase().includes(texto) ||
+          ref.marcaVehiculo.toLowerCase().includes(texto);
+
+        return coincideCat && coincideAuto && coincidePrecio && coincideTexto;
+      });
+
+      renderCatalogo(resultados);
+    }
+
+    // ==========================================
+    // GESTIÓN DE SESIÓN (LOGIN / LOGOUT / ADMIN)
+    // ==========================================
+    function toggleAuthModal() {
+      document.getElementById('auth-modal').classList.toggle('hidden');
+    }
+
+    function toggleNuevoModal() {
+      document.getElementById('nuevo-modal').classList.toggle('hidden');
+    }
+
+    async function login() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-pass').value.trim();
+      const submitBtn = document.getElementById('login-btn-submit');
+      
+      if (!email || !password) {
+        alert('Ingresa correo y contraseña');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Verificando...';
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      
+      submitBtn.disabled = false;
+      submitBtn.innerText = 'Entrar al Almacén';
+
+      if (error) {
+        alert('Credenciales incorrectas: ' + error.message);
+      } else {
+        actualizarUIAdmin(data.user);
+        toggleAuthModal();
+      }
+    }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      document.getElementById('admin-panel').classList.add('hidden');
+      document.getElementById('auth-controls').innerHTML = `
+        <button id="auth-btn" onclick="toggleAuthModal()" class="bg-[#ff5500] hover:bg-[#e04b00] text-white font-bold px-4 py-2 rounded-xl shadow-md shadow-[#ff5500]/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-user-shield"></i> Acceso Empleado
+        </button>
+      `;
+    }
+
+    function actualizarUIAdmin(user) {
+      document.getElementById('admin-panel').classList.remove('hidden');
+      document.getElementById('admin-user-display').innerText = user.email;
+      
+      document.getElementById('auth-controls').innerHTML = `
+        <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check"></i> ${user.email.split('@')[0]}
+        </span>
+        <button onclick="logout()" class="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-bold px-3 py-1.5 rounded-lg border border-neutral-700 transition">
+          Salir
+        </button>
+      `;
+    }
+
+    async function verificarSesionInicial() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        actualizarUIAdmin(session.user);
+      }
+    }
+
+    // ==========================================
+    // ALTA DE NUEVA REFACCIÓN (GUARDAR EN BD)
+    // ==========================================
+    async function guardarNuevaRefaccion(e) {
+      e.preventDefault();
+      const saveBtn = document.getElementById('btn-guardar-pieza');
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Guardando en Supabase...';
+
+      const nuevaPieza = {
+        nombre: document.getElementById('nuevo-nombre').value.trim(),
+        numero_parte: document.getElementById('nuevo-parte').value.trim().toUpperCase(),
+        categoria_id: Number(document.getElementById('nuevo-cat').value),
+        marca_vehiculo: document.getElementById('nuevo-auto').value.trim(),
+        modelo_ano: Number(document.getElementById('nuevo-ano').value),
+        precio: Number(document.getElementById('nuevo-precio').value),
+        stock: Number(document.getElementById('nuevo-stock').value),
+        imagen_url: document.getElementById('nuevo-imagen').value.trim()
+      };
+
+      const { data, error } = await supabaseClient.from('productos').insert([nuevaPieza]).select();
+
+      saveBtn.disabled = false;
+      saveBtn.innerText = 'Guardar en Supabase';
+
+      if (error) {
+        alert('Error al guardar pieza: ' + error.message);
+      } else {
+        alert('¡Pieza dada de alta correctamente en la base de datos!');
+        toggleNuevoModal();
+        await cargarProductos();
+        ejecutarFiltros();
+      }
+    }
+
+    // ==========================================
+    // CHAT CON ASESOR VIRTUAL (GEMINI)
+    // ==========================================
+    function toggleChat() {
+      document.getElementById('chat-modal').classList.toggle('hidden');
+      cargarMensajes();
+    }
+
+    async function cargarMensajes() {
+      const cont = document.getElementById('chat-mensajes');
+      const { data } = await supabaseClient.from('mensajes_chat').select('*').order('id', { ascending: true }).limit(25);
+      if (data) {
+        cont.innerHTML = data.map(m => `
+          <div class="p-2.5 rounded-xl ${m.remitente === 'Cliente' ? 'bg-[#23262f] text-right ml-6 border border-neutral-700' : 'bg-[#ff5500]/10 text-left mr-6 border border-[#ff5500]/30'}">
+            <span class="font-black text-[10px] uppercase tracking-wider ${m.remitente === 'Cliente' ? 'text-neutral-400' : 'text-[#ff5500]'} block mb-0.5">${m.remitente}</span>
+            <span class="text-neutral-100 leading-relaxed">${m.mensaje}</span>
+          </div>
+        `).join('');
+        cont.scrollTop = cont.scrollHeight;
+      }
+    }
+
+    async function consultarIA(preguntaCliente) {
+      const inventarioInfo = refaccionesInstanciadas.map(p => 
+        `- ${p.nombre} (${p.numeroParte}) | Auto: ${p.marcaVehiculo} ${p.modeloAno} | Precio: ${p.getPrecioFormateado()} | Stock: ${p.stock}`
+      ).join('\n');
+
+      const systemPrompt = `Eres el asesor técnico de "Refaccionaria AutoTech".
+Responde breve, amable y profesional (máximo 2 oraciones).
+Inventario actual registrado en Supabase:
+${inventarioInfo}
+
+Instrucciones:
+1. Recomienda piezas exactas, su precio y stock.
+2. Si preguntan por compatibilidad para Versa, Aveo, Jetta, Focus o Corolla, usa los datos de la lista.
+3. Si la pieza no está en catálogo, ofrece cotizarla sobre pedido amablemente.`;
+
+      const modelos = ['gemini-3-flash-preview', 'gemini-3.5-flash'];
+
+      for (const modelo of modelos) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-goog-api-key': GEMINI_API_KEY 
+            },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${systemPrompt}\n\nCliente pregunta: ${preguntaCliente}` }] }]
+            })
+          });
+
+          const result = await response.json();
+          if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+            return result.candidates[0].content.parts[0].text;
+          }
+        } catch (err) {
+          console.warn(`Fallo ${modelo}:`, err);
+        }
+      }
+
+      return "Lo siento, no pude procesar la consulta en este momento.";
+    }
+
+    async function enviarMensaje() {
+      const input = document.getElementById('chat-input');
+      const btn = document.getElementById('chat-send-btn');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      input.value = '';
+      btn.disabled = true;
+
+      await supabaseClient.from('mensajes_chat').insert([{ remitente: 'Cliente', mensaje: msg }]);
+      await cargarMensajes();
+
+      const respuestaIA = await consultarIA(msg);
+
+      await supabaseClient.from('mensajes_chat').insert([{ remitente: 'AutoTech AI', mensaje: respuestaIA }]);
+      await cargarMensajes();
+
+      btn.disabled = false;
+    }
+
+    window.onload = () => {
+      cargarProductos();
+      verificarSesionInicial();
+    };
+  </script>
+</body>
+</html>
